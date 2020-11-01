@@ -29,19 +29,29 @@ def setState(x,y,s):
     elif s==State.WHITE:
         object.setImage("images/white.png")
     elif turn==Turn.BLACK:
-        object.setImage("images/blank possible.png")
+        object.setImage("images/black possible.png")
     else:
         object.setImage("images/white possible.png")
 
 def stone_onMouseAction(x,y):
     global turn
-    setPossible()
-    if turn==Turn.BLACK:
-        setState(x,y,State.BLACK)
-        turn=Turn.WHITE
-    else:
-        setState(x,y,State.WHITE)
-        turn=Turn.BLACK
+
+    object=board[y][x]
+    if object.state==State.POSSIBLE:
+        if turn==Turn.BLACK:
+            setState(x,y,State.BLACK)
+            reverse_xy(x,y)
+            turn=Turn.WHITE
+        else:
+            setState(x,y,State.WHITE)
+            reverse_xy(x,y)
+            turn=Turn.BLACK
+        if setPossible()==False:
+            if turn==Turn.BLACK:turn=Turn.WHITE
+            else:turn=Turn.BLACK
+            if setPossible()==False:
+                showMessage("게임끝")
+
 def setPossible_xy_dir(x,y,dx,dy):
     if turn==Turn.BLACK:
         mine=State.BLACK
@@ -57,6 +67,7 @@ def setPossible_xy_dir(x,y,dx,dy):
         y=y+dy
 
         if x<0 or x>7: return False
+        if y<0 or y>7: return False
 
         object=board[y][x]
         if object.state==other:
@@ -66,12 +77,23 @@ def setPossible_xy_dir(x,y,dx,dy):
         else: return False
 
 
+def reverse_xy(x,y):
+    reverse_xy_dir(x,y,0,1)
+    reverse_xy_dir(x,y,1,1)
+    reverse_xy_dir(x,y,1,0)
+    reverse_xy_dir(x,y,1,-1)
+    reverse_xy_dir(x,y,0,-1)
+    reverse_xy_dir(x,y,-1,-1)
+    reverse_xy_dir(x,y,-1,0)
+    reverse_xy_dir(x,y,-1,1)
+    return False
 
 
 def setPossible_xy(x,y):
     object=board[y][x]
     if object.state==State.BLACK:return False
     if object.state==State.WHITE:return False
+    setState(x,y,State.BLANK)
     if(setPossible_xy_dir(x,y,0,1)):return True
     if(setPossible_xy_dir(x,y,1,1)):return True
     if(setPossible_xy_dir(x,y,1,0)):return True
@@ -82,11 +104,46 @@ def setPossible_xy(x,y):
     if(setPossible_xy_dir(x,y,-1,1)):return True
     return False
 
+def reverse_xy_dir(x,y,dx,dy):
+    if turn==Turn.BLACK:
+        mine=State.BLACK
+        other=State.WHITE
+    else:
+        mine=State.WHITE
+        other=State.BLACK
+
+    possible=False
+
+    while True:
+        x=x+dx
+        y=y+dy
+
+        if x<0 or x>7: return False
+        if y<0 or y>7: return False
+
+        object=board[y][x]
+        if object.state==other:
+            possible=True
+        elif object.state==mine:
+            if possible:
+                while True:
+                    x=x-dx
+                    y=y-dy
+                    object=board[y][x]
+                    if object.state==other:
+                        setState(x,y,mine)
+                    else:
+                        return
+            else: return
 def setPossible():
+    possible=False
     for y in range(8):
         for x in range(8):
             if setPossible_xy(x,y):
                 setState(x,y,State.POSSIBLE)
+                possible=True
+    return possible
+                
 board=[]
 for y in range(8):
     board.append([])
@@ -98,6 +155,7 @@ for y in range(8):
         object.state=State.BLANK
 
         board[y].append(object)
+
 setState(3,3,State.BLACK)
 setState(4,4,State.BLACK)
 setState(3,4,State.WHITE)
